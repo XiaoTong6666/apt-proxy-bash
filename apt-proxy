@@ -1,0 +1,53 @@
+#!/bin/bash
+
+if [ ! -f "/etc/apt/apt.conf.d/proxy.conf" ]; then
+  echo "你没/etc/apt/apt.conf.d/proxy.conf配置文件，正在给你造..."
+  sudo touch /etc/apt/apt.conf.d/proxy.conf
+  sleep 1
+fi
+
+if ! grep -q "Acquire::http::Proxy" /etc/apt/apt.conf.d/proxy.conf || ! grep -q "Acquire::https::Proxy" /etc/apt/apt.conf.d/proxy.conf; then
+  echo "造了配置文件但没东西。所以，输入你的HTTP(S)代理地址，例如http://127.0.0.1:10809/"
+  sleep 1
+  read -p "请输入: " http_proxy
+  echo "Acquire::http::Proxy \"$http_proxy\";" | sudo tee -a /etc/apt/apt.conf.d/proxy.conf >/dev/null
+  echo "Acquire::https::Proxy \"$http_proxy\";" | sudo tee -a /etc/apt/apt.conf.d/proxy.conf >/dev/null
+  sleep 1
+  echo " \
+  "
+  echo "好了,下面这两行这是你APT代理的配置文件"
+  sudo cat /etc/apt/apt.conf.d/proxy.conf
+  sleep 1
+  echo " \
+  "
+fi
+
+if [ "$#" -eq 0 ]; then
+  echo "用法: apt-proxy [-s] [-c]"
+  echo "-s 代理！启动！"
+  echo "-c 代理...关闭..."
+  exit 1
+fi
+
+while getopts "sc" opt; do
+  case ${opt} in
+    s )
+      echo "代理！启动！"
+      sudo sed -i 's/#//g' /etc/apt/apt.conf.d/proxy.conf
+      echo "下面这两行是你APT的代理配置文件"
+      sudo cat /etc/apt/apt.conf.d/proxy.conf
+      exit 0
+      ;;
+    c )
+      echo "代理...关闭..."
+      sudo sed -i 's/^/#&/' /etc/apt/apt.conf.d/proxy.conf
+      echo "下面这两行是你APT的代理配置文件"
+      sudo cat /etc/apt/apt.conf.d/proxy.conf
+      exit 0
+      ;;
+    \? )
+      echo "用法: apt-proxy [-s] [-c]"
+      exit 1
+      ;;
+  esac
+done
